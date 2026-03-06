@@ -1,8 +1,8 @@
 ---
 name: gigachat
 description: Integrate GigaChat (Sber AI) with OpenClaw via gpt2giga proxy
-version: 1.1.0
-metadata: {"openclaw":{"emoji":"🤖","homepage":"https://github.com/smvlx/openclaw-ru-skills","os":["darwin","linux"],"requires":{"bins":["python3"],"env":["GIGACHAT_CREDENTIALS","GIGACHAT_SCOPE"]},"primaryEnv":"GIGACHAT_CREDENTIALS","configPaths":["~/.openclaw/gigachat-new.env","~/.openclaw/openclaw.json"]}}
+version: 1.2.0
+metadata: {"openclaw":{"emoji":"🤖","homepage":"https://github.com/smvlx/openclaw-ru-skills","os":["darwin","linux"],"requires":{"bins":["python3","curl"],"env":["GIGACHAT_CREDENTIALS","GIGACHAT_SCOPE"]},"primaryEnv":"GIGACHAT_CREDENTIALS","configPaths":["~/.openclaw/gigachat-new.env","~/.openclaw/openclaw.json"],"install":[{"type":"uv","package":"gpt2giga"}]}}
 ---
 
 # GigaChat Skill
@@ -11,10 +11,10 @@ Integrate GigaChat (Sber AI) with OpenClaw via gpt2giga proxy.
 
 ## Features
 
-- ✅ Three models: GigaChat, GigaChat-Pro, GigaChat-Max
-- ✅ OpenAI API compatibility
-- ✅ Automatic token generation
-- ✅ Multi-model support
+- Three models: GigaChat, GigaChat-Pro, GigaChat-Max
+- OpenAI API compatibility via gpt2giga proxy
+- Automatic token management (gpt2giga handles OAuth internally)
+- Credentials passed via environment variables only (never on CLI)
 
 ## Prerequisites
 
@@ -53,19 +53,23 @@ Integrate GigaChat (Sber AI) with OpenClaw via gpt2giga proxy.
 Output:
 
 ```
-Generating GigaChat access token...
-Token obtained successfully (expires in ~30min)
 Starting gpt2giga proxy on port 8443...
 ✅ gpt2giga started successfully (PID: 12345)
-   Log: /root/.openclaw/gpt2giga.log
+   Log: ~/.openclaw/gpt2giga.log
    Endpoint: http://localhost:8443/v1/chat/completions
-
-⚠️  Token expires in ~30 minutes. Restart this script to refresh.
 ```
+
+gpt2giga handles OAuth token generation and refresh internally using the `GIGACHAT_CREDENTIALS` environment variable.
 
 ### 2. Configure OpenClaw
 
-Add to `openclaw.json`:
+Run the patch script (backs up your config first):
+
+```bash
+/openclaw/skills/gigachat/scripts/patch-config.sh
+```
+
+Or add manually to `openclaw.json`:
 
 ```json
 {
@@ -168,20 +172,12 @@ mkdir -p /root/.openclaw/agents/ruslan/workspace
 
 ## Token Management
 
-**Token Lifespan:** ~30 minutes  
-**When to Refresh:** Before token expires
+gpt2giga handles OAuth token generation and refresh automatically using the `GIGACHAT_CREDENTIALS` environment variable. No manual token management is needed.
 
-### Manual Refresh:
+If the proxy loses its token (e.g. after a long idle period), restart it:
 
 ```bash
 /openclaw/skills/gigachat/scripts/start-proxy.sh
-```
-
-### Auto-Refresh (via cron):
-
-```bash
-# Add to crontab: restart proxy every 25 minutes
-*/25 * * * * /openclaw/skills/gigachat/scripts/start-proxy.sh
 ```
 
 ## Troubleshooting
@@ -209,33 +205,33 @@ fuser -k 8443/tcp
 /openclaw/skills/gigachat/scripts/start-proxy.sh
 ```
 
-### Issue: "Can't decode Authorization header"
-
-**Cause:** Using `--gigachat.credentials` flag (known bug)  
-**Fix:** Use access token instead (startup script handles this)
 
 ## Architecture
 
 ```
 OpenClaw → http://localhost:8443/v1/chat/completions
            ↓
-       gpt2giga (proxy)
+       gpt2giga (proxy, env-var auth)
            ↓
-   Sber GigaChat API (OAuth token auth)
+   Sber GigaChat API (OAuth token auto-managed)
 ```
 
 **Flow:**
 
-1. Startup script generates OAuth token from Client ID/Secret
-2. gpt2giga starts with access token
-3. OpenClaw sends OpenAI-format requests
-4. gpt2giga translates to GigaChat format
+1. Startup script exports credentials as environment variables
+2. gpt2giga starts and handles OAuth token generation internally
+3. OpenClaw sends OpenAI-format requests to localhost:8443
+4. gpt2giga translates to GigaChat format and manages auth
 5. Responses translated back to OpenAI format
 
 ## Files
 
-- `scripts/start-proxy.sh` — Startup script with token generation
-- `scripts/setup.sh` — Create env template
+- `scripts/start-proxy.sh` — Start proxy with env-var credentials
+- `scripts/start.sh` — Alternative start (nohup)
+- `scripts/stop.sh` — Stop proxy
+- `scripts/status.sh` — Check proxy status
+- `scripts/setup.sh` — Install gpt2giga from PyPI
+- `scripts/patch-config.sh` — Add GigaChat provider to openclaw.json (backs up config first)
 - `SKILL.md` — This file
 
 ## Limitations
