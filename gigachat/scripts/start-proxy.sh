@@ -37,60 +37,31 @@ elif command -v lsof >/dev/null 2>&1; then
 fi
 sleep 2
 
-# Generate access token
-echo "Generating GigaChat access token..."
+# Start gpt2giga using env vars (no tokens exposed on command line)
+# gpt2giga natively reads GIGACHAT_CREDENTIALS, GIGACHAT_SCOPE, and
+# GIGACHAT_VERIFY_SSL_CERTS from the environment — no manual OAuth needed.
+echo "Starting gpt2giga proxy on port $PORT..."
 
-# Cross-platform UUID generation
-if command -v uuidgen >/dev/null 2>&1; then
-  UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
-elif [ -f /proc/sys/kernel/random/uuid ]; then
-  UUID=$(cat /proc/sys/kernel/random/uuid)
-else
-  UUID=$(node -e "console.log(crypto.randomUUID())" 2>/dev/null || echo "fallback-$(date +%s)-$$")
-fi
-
-# ⚠️  WARNING: SSL verification disabled (-k flag)
-# Sber uses a custom CA certificate that is not in standard CA bundles.
-# To enable SSL verification:
-# 1. Download Sber root CA from https://developers.sber.ru/
-# 2. Install to /etc/ssl/certs/sber-ca.crt
-# 3. Replace -k with --cacert /etc/ssl/certs/sber-ca.crt
+# SSL verification: enable if Sber CA is installed, disable otherwise
 SBER_CA="/etc/ssl/certs/sber-ca.crt"
 if [ -f "$SBER_CA" ]; then
-  CURL_SSL_OPTS="--cacert $SBER_CA"
+  export GIGACHAT_VERIFY_SSL_CERTS=true
 else
-  echo "⚠️  WARNING: SSL verification disabled (-k flag). Sber CA not found at $SBER_CA"
-  CURL_SSL_OPTS="-k"
+  echo "⚠️  SSL verification disabled. Sber CA not found at $SBER_CA"
+  echo "   To enable: download Sber root CA from https://developers.sber.ru/ and install to $SBER_CA"
+  export GIGACHAT_VERIFY_SSL_CERTS=false
 fi
 
-TOKEN_RESPONSE=$(curl -s $CURL_SSL_OPTS -X POST \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "Accept: application/json" \
-  -H "RqUID: $UUID" \
-  -H "Authorization: Basic $GIGACHAT_CREDENTIALS" \
-  --data-urlencode "scope=${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}" \
-  "https://ngw.devices.sberbank.ru:9443/api/v2/oauth")
+# Export env vars for gpt2giga (credentials already loaded from ENV_FILE)
+export GIGACHAT_CREDENTIALS
+export GIGACHAT_SCOPE="${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}"
+export GPT2GIGA_HOST=127.0.0.1
+export GPT2GIGA_PORT=$PORT
 
-ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
-
-if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-  echo "Error: Failed to get access token"
-  # Show error message from response without exposing raw token/credentials
-  echo "$TOKEN_RESPONSE" | jq -r '.error // .message // "Unknown error (check credentials and network)"' 2>/dev/null || echo "Unknown error (check credentials and network)"
-  exit 1
-fi
-
-echo "Token obtained successfully (expires in ~30min)"
-
-# Start gpt2giga
-echo "Starting gpt2giga proxy on port $PORT..."
 gpt2giga \
   --proxy.host 127.0.0.1 \
   --proxy.port $PORT \
   --proxy.pass-model true \
-  --gigachat.access-token "$ACCESS_TOKEN" \
-  --gigachat.scope "${GIGACHAT_SCOPE:-GIGACHAT_API_PERS}" \
-  --gigachat.verify-ssl-certs false \
   > "$LOG_FILE" 2>&1 &
 
 NEW_PID=$!

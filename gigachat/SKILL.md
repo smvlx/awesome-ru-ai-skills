@@ -2,7 +2,7 @@
 name: gigachat
 description: Integrate GigaChat (Sber AI) with OpenClaw via gpt2giga proxy
 version: 1.1.0
-metadata: {"openclaw":{"emoji":"🤖","homepage":"https://github.com/smvlx/openclaw-ru-skills","os":["darwin","linux"],"requires":{"bins":["python3","curl","jq"],"env":["GIGACHAT_CREDENTIALS","GIGACHAT_SCOPE"]},"primaryEnv":"GIGACHAT_CREDENTIALS","configPaths":["~/.openclaw/gigachat-new.env","~/.openclaw/openclaw.json"]}}
+metadata: {"openclaw":{"emoji":"🤖","homepage":"https://github.com/smvlx/openclaw-ru-skills","os":["darwin","linux"],"requires":{"bins":["python3"],"env":["GIGACHAT_CREDENTIALS","GIGACHAT_SCOPE"]},"primaryEnv":"GIGACHAT_CREDENTIALS","configPaths":["~/.openclaw/gigachat-new.env","~/.openclaw/openclaw.json"]}}
 ---
 
 # GigaChat Skill
@@ -240,10 +240,9 @@ OpenClaw → http://localhost:8443/v1/chat/completions
 
 ## Limitations
 
-- **Token Expiry:** Tokens expire in ~30 minutes
 - **Free Tier Quotas:** Limited tokens per model
-- **SSL Verification:** Disabled (`--verify-ssl-certs false`) due to Sber's custom CA
-- **Credentials Security:** CLI args visible in `ps aux` → startup script uses env vars
+- **SSL Verification:** Disabled by default due to Sber's custom CA; install Sber root CA to `/etc/ssl/certs/sber-ca.crt` to enable
+- **Credentials:** Passed via environment variables only (never on the command line); protect `~/.openclaw/gigachat-new.env` with `chmod 600`
 
 ## References
 

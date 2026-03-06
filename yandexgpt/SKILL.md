@@ -2,7 +2,7 @@
 name: yandexgpt
 description: OpenAI-compatible translation proxy for Yandex Cloud Foundation Models (YandexGPT)
 version: 1.1.0
-metadata: {"openclaw":{"emoji":"🦊","homepage":"https://github.com/smvlx/openclaw-ru-skills","os":["darwin","linux"],"requires":{"bins":["node"],"env":["YANDEX_API_KEY","YANDEX_FOLDER_ID"]},"primaryEnv":"YANDEX_API_KEY","configPaths":["~/.openclaw/yandexgpt.env","~/.openclaw/openclaw.json"]}}
+metadata: {"openclaw":{"emoji":"🦊","homepage":"https://github.com/smvlx/openclaw-ru-skills","os":["darwin","linux"],"requires":{"bins":["node","curl"],"env":["YANDEX_API_KEY","YANDEX_FOLDER_ID"]},"primaryEnv":"YANDEX_API_KEY","configPaths":["~/.openclaw/yandexgpt.env","~/.openclaw/openclaw.json"]}}
 ---
 
 # YandexGPT Proxy
