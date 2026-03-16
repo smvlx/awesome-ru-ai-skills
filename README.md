@@ -1,19 +1,33 @@
 # OpenClaw Russian AI Skills
 
-Three skills that give your OpenClaw agent access to Russian AI services: **GigaChat** (Sber), **YandexGPT**, and **Yandex 360** (Disk, Calendar, Mail & Telemost).
+Skills that give your AI coding agent access to Russian services: **GigaChat** (Sber), **YandexGPT**, **Yandex 360** (Disk, Calendar, Mail & Telemost), **Yandex Cloud**, and **Yandex Metrika**.
 
 ## What This Enables
 
 Talk to your agent in natural language — it handles the rest:
 
 | You say | Agent does |
-|---------|-----------|
-| *"Answer in Russian using GigaChat-Max: Что такое квантовые вычисления?"* | Routes request through GigaChat proxy → Sber API |
-| *"Summarize this file with YandexGPT"* | Sends content through YandexGPT proxy → Yandex Foundation Models |
+|---------|----------|
+| *"Answer in Russian using GigaChat-Max"* | Routes request through GigaChat proxy |
+| *"Summarize this file with YandexGPT"* | Sends content through YandexGPT proxy |
 | *"Upload report.pdf to Yandex Disk"* | Runs `yax disk upload` via CLI |
-| *"Create a meeting tomorrow at 14:00 Moscow time"* | Runs `yax calendar create` with timezone |
-| *"Create a Telemost meeting for the team"* | Runs `yax telemost create` via Telemost API |
-| *"Spawn a Russian-speaking subagent to proofread this text"* | Creates a GigaChat-Pro or YandexGPT subagent |
+| *"Create a meeting tomorrow at 14:00"* | Runs `yax calendar create` with timezone |
+| *"Deploy my static site to Object Storage"* | Runs `yc storage` commands |
+| *"Check my Metrika stats for the last 30 days"* | Calls Metrika Reporting API |
+| *"Create a DNS record for my domain"* | Runs `yc dns zone add-records` |
+| *"Set up Metrika counter in my Next.js app"* | Generates tracking component code |
+
+---
+
+## Skills
+
+| Skill | Directory | What it does |
+|-------|-----------|-------------|
+| **GigaChat** | `gigachat/` | Sber GigaChat API — Lite, Pro, Max models via OpenAI-compatible proxy |
+| **YandexGPT** | `yandexgpt/` | Yandex Foundation Models — YandexGPT, Lite, 32K via proxy |
+| **Yandex 360** | `yax/` | Disk, Calendar, Mail (IMAP/SMTP), Telemost via `yax` CLI |
+| **Yandex Cloud** | `yandex-cloud/` | Full `yc` CLI reference — storage, compute, DNS, serverless, databases, certificates, and 30+ service groups |
+| **Yandex Metrika** | `yandex-metrika/` | Analytics API — traffic stats, counters, goals, reports + Next.js setup guide |
 
 ---
 
@@ -27,12 +41,9 @@ Install each skill individually from ClawHub:
 clawhub install smvlx/sber-gigachat
 clawhub install smvlx/yandex-gpt
 clawhub install smvlx/yandex-cli-yax
+clawhub install smvlx/yandex-cloud
+clawhub install smvlx/yandex-metrika
 ```
-
-Or browse on ClawHub:
-- [smvlx/sber-gigachat](https://clawhub.ai/smvlx/sber-gigachat)
-- [smvlx/yandex-gpt](https://clawhub.ai/smvlx/yandex-gpt)
-- [smvlx/yandex-cli-yax](https://clawhub.ai/smvlx/yandex-cli-yax)
 
 ### Option 2: Install script
 
@@ -50,12 +61,24 @@ git clone https://github.com/smvlx/openclaw-ru-skills.git
 cp -r openclaw-ru-skills/gigachat ~/.openclaw/skills/
 cp -r openclaw-ru-skills/yandexgpt ~/.openclaw/skills/
 cp -r openclaw-ru-skills/yax ~/.openclaw/skills/
+cp -r openclaw-ru-skills/yandex-cloud ~/.openclaw/skills/
+cp -r openclaw-ru-skills/yandex-metrika ~/.openclaw/skills/
 cd ~/.openclaw/skills/yax && npm install --omit=dev
 ```
 
-### Option 4: Chat-based install
+### Option 4: Claude Code
 
-Paste the repo URL into your OpenClaw conversation:
+For Claude Code users, copy the skill directories to `~/.claude/skills/`:
+
+```bash
+git clone https://github.com/smvlx/openclaw-ru-skills.git /tmp/openclaw-ru-skills
+cp -r /tmp/openclaw-ru-skills/yandex-cloud ~/.claude/skills/
+cp -r /tmp/openclaw-ru-skills/yandex-metrika ~/.claude/skills/
+```
+
+### Option 5: Chat-based install
+
+Paste the repo URL into your agent conversation:
 
 > Install skills from https://github.com/smvlx/openclaw-ru-skills
 
@@ -65,14 +88,14 @@ The agent will handle cloning and setup.
 
 ## Setup
 
-Each skill needs **credentials from external services** — that's the only part you do manually. Everything else (config files, installations, proxy startup, OpenClaw configuration) **your agent handles**.
+Each skill needs **credentials from external services** — that's the only part you do manually. Everything else your agent handles.
 
-### 🤖 GigaChat (Sber AI)
+### GigaChat (Sber AI)
 
 <table>
 <tr><td width="50%">
 
-**👤 You do once (2 min)**
+**You do once (2 min)**
 
 1. Register at [developers.sber.ru](https://developers.sber.ru/)
 2. Create a GigaChat API application
@@ -82,7 +105,7 @@ Each skill needs **credentials from external services** — that's the only part
 
 </td><td width="50%">
 
-**🤖 Agent automates**
+**Agent automates**
 
 ```bash
 # Create env file
@@ -97,40 +120,22 @@ EOF
 pip3 install gpt2giga
 
 # Start proxy (localhost:8443)
-/openclaw/skills/openclaw-ru-skills/gigachat/scripts/start-proxy.sh
-
-# Register provider in OpenClaw
-openclaw gateway config.patch '{
-  "models": {
-    "providers": {
-      "gigachat": {
-        "baseUrl": "http://127.0.0.1:8443",
-        "apiKey": "not-needed",
-        "api": "openai-completions",
-        "models": [
-          {"id": "GigaChat-Max", "name": "GigaChat MAX"},
-          {"id": "GigaChat-Pro", "name": "GigaChat Pro"},
-          {"id": "GigaChat", "name": "GigaChat Lite"}
-        ]
-      }
-    }
-  }
-}'
+start-proxy.sh
 ```
 
 </td></tr>
 </table>
 
-**Models available:** GigaChat Lite · GigaChat Pro · GigaChat MAX
+**Models:** GigaChat Lite, GigaChat Pro, GigaChat MAX
 
 ---
 
-### 🦊 YandexGPT (Foundation Models)
+### YandexGPT (Foundation Models)
 
 <table>
 <tr><td width="50%">
 
-**👤 You do once (3 min)**
+**You do once (3 min)**
 
 1. Go to [Yandex Cloud Console](https://console.cloud.yandex.ru/iam)
 2. Create a service account
@@ -141,7 +146,7 @@ openclaw gateway config.patch '{
 
 </td><td width="50%">
 
-**🤖 Agent automates**
+**Agent automates**
 
 ```bash
 # Create env file
@@ -152,224 +157,154 @@ YANDEX_PROXY_PORT="8444"
 EOF
 
 # Start proxy (localhost:8444)
-/openclaw/skills/openclaw-ru-skills/yandexgpt/scripts/start.sh
-
-# Register provider in OpenClaw
-openclaw gateway config.patch '{
-  "models": {
-    "providers": {
-      "yandexgpt": {
-        "baseUrl": "http://127.0.0.1:8444",
-        "apiKey": "not-needed",
-        "api": "openai-completions",
-        "models": [
-          {"id": "yandexgpt", "name": "YandexGPT"},
-          {"id": "yandexgpt-lite", "name": "YandexGPT Lite"},
-          {"id": "yandexgpt-32k", "name": "YandexGPT 32K"}
-        ]
-      }
-    }
-  }
-}'
+start.sh
 ```
 
 </td></tr>
 </table>
 
-**Models available:** YandexGPT Lite · YandexGPT · YandexGPT 32K
+**Models:** YandexGPT Lite, YandexGPT, YandexGPT 32K
 
 ---
 
-### 📁📅📧📹 Yandex 360 (Disk, Calendar, Mail & Telemost)
+### Yandex 360 (Disk, Calendar, Mail & Telemost)
 
 <table>
 <tr><td width="50%">
 
-**👤 You do once (3 min)**
+**You do once (3 min)**
 
-1. Create an OAuth app at [oauth.yandex.ru/client/new](https://oauth.yandex.ru/client/new)
+1. Create OAuth app at [oauth.yandex.ru/client/new](https://oauth.yandex.ru/client/new)
 2. Set redirect URI: `https://oauth.yandex.ru/verification_code`
 3. Enable scopes for the services you need:
 
-   | Service | Scope | Enables |
-   |---------|-------|---------|
-   | **Disk** | `cloud_api:disk.app_folder` | App folder access |
-   | | `cloud_api:disk.info` | Disk info & quota |
-   | **Calendar** | `calendar:all` | Read/write calendar events |
-   | **Mail** | `mail:imap_full` | Read mail via IMAP |
-   | | `mail:smtp` | Send mail via SMTP |
-   | **Telemost** | `telemost-api:conferences.create` | Create video conferences |
+   | Service | Scope |
+   |---------|-------|
+   | **Disk** | `cloud_api:disk.app_folder`, `cloud_api:disk.info` |
+   | **Calendar** | `calendar:all` |
+   | **Mail** | `mail:imap_full`, `mail:smtp` |
+   | **Telemost** | `telemost-api:conferences.create` |
 
-   > 💡 Select only the scopes you need. Most users need Disk + Calendar only.
-   >
-   > Full scope list: [yandex.ru/dev/id/doc/en/codes/scopes](https://yandex.ru/dev/id/doc/en/codes/scopes)
-4. Note **Client ID** (and Secret if applicable)
+4. Note **Client ID**
 5. Give credentials to your agent
 
 </td><td width="50%">
 
-**🤖 Agent automates**
+**Agent automates**
 
 ```bash
-# Create env file
-cat > ~/.openclaw/yax.env << 'EOF'
-YAX_CLIENT_ID="<your-client-id>"
-YAX_CLIENT_SECRET="<your-secret-if-any>"
-EOF
-
 # Authenticate (device code flow)
-cd /openclaw/skills/openclaw-ru-skills/yax
-node src/yax.cjs auth device
-# Agent shows you a URL + code to confirm
+cd yax && node src/yax.cjs auth device
 ```
 
 </td></tr>
 </table>
 
-After auth, the agent can run any `yax` command directly — no further setup needed. All four services (Disk, Calendar, Mail, Telemost) use the same OAuth token.
+---
+
+### Yandex Cloud
+
+<table>
+<tr><td width="50%">
+
+**You do once (2 min)**
+
+1. Install `yc` CLI:
+   ```bash
+   curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+   ```
+2. Run `yc init` and follow the prompts
+3. That's it — the skill uses the `yc` CLI directly
+
+</td><td width="50%">
+
+**Agent can do**
+
+```bash
+# Storage
+yc storage bucket create --name my-site
+yc storage s3 cp --recursive ./out/ s3://my-site/
+
+# Compute
+yc compute instance create --name my-vm ...
+
+# DNS, certs, serverless, databases...
+yc dns zone add-records ...
+yc certificate-manager certificate request ...
+yc serverless function create ...
+```
+
+</td></tr>
+</table>
+
+Covers 30+ service groups: storage, compute, VPC, DNS, certificates, managed databases (PostgreSQL, MySQL, ClickHouse, MongoDB, Redis, Kafka), Kubernetes, serverless, CDN, load balancers, and more.
 
 ---
 
-## Agent Usage
+### Yandex Metrika
 
-### GigaChat & YandexGPT — as models
+<table>
+<tr><td width="50%">
 
-Once configured, use them like any other model:
+**You do once (3 min)**
 
-> *"Switch to GigaChat-Max and explain quantum computing in Russian"*
->
-> *"Use YandexGPT-32K to summarize this document"*
->
-> *"Compare GigaChat-Pro and YandexGPT responses to this prompt"*
+1. Create an OAuth app at [oauth.yandex.com](https://oauth.yandex.com/?dialog=create-client-entry)
+2. Add scopes: `metrika:read`, `metrika:write`
+3. Generate a token via: `https://oauth.yandex.com/authorize?response_type=token&client_id=<app_id>`
+4. Store the token (e.g. in `.env.local` as `YM_OAUTH_TOKEN`)
 
-### GigaChat & YandexGPT — as subagents
+</td><td width="50%">
 
-Create Russian-speaking subagents powered by these models:
-
-> *"Spawn a subagent on GigaChat-Pro to proofread this Russian text"*
->
-> *"Create a YandexGPT subagent to translate this article into Russian"*
-
-Behind the scenes, the agent can register a persistent subagent:
+**Agent can do**
 
 ```bash
-openclaw gateway config.patch '{
-  "agents": {
-    "list": [{
-      "id": "ruslan",
-      "name": "Ruslan",
-      "emoji": "🐻",
-      "model": "gigachat/GigaChat-Pro",
-      "workspace": "~/.openclaw/agents/ruslan/workspace"
-    }]
-  }
-}'
+# Get traffic overview
+curl -H 'Authorization: OAuth TOKEN' \
+  'https://api-metrika.yandex.net/stat/v1/data?
+  id=COUNTER_ID&metrics=ym:s:visits,ym:s:users
+  &date1=30daysAgo&date2=today'
+
+# Manage counters and goals
+# Set up tracking in Next.js / React / HTML
+# Build custom reports with 20+ metrics
 ```
 
-### Yandex Disk
+</td></tr>
+</table>
 
-> *"Upload today's report to Yandex Disk"*
->
-> *"Download /docs/contract.pdf from Yandex Disk"*
->
-> *"Create a folder called 'backups' on Yandex Disk"*
->
-> *"Show how much space is left on my Yandex Disk"*
-
-What the agent executes:
-
-```bash
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs disk upload ./report.md /reports/report.md
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs disk download /docs/contract.pdf ./contract.pdf
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs disk mkdir /backups
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs disk info
-```
-
-### Yandex Calendar
-
-> *"Create a meeting for tomorrow at 2pm Moscow time: Standup with the team"*
->
-> *"List my calendars"*
-
-What the agent executes:
-
-```bash
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs calendar create \
-  "Standup with the team" "2026-02-14" "14:00:00" "14:30:00" \
-  "Daily standup" "Europe/Moscow"
-
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs calendar list
-```
-
-### Yandex Mail
-
-> Works via IMAP/SMTP. Note: ports 993 (IMAP) and 465 (SMTP) are blocked on some cloud hosts like Railway.
-
-> *"Check mail info"*
-
-What the agent executes:
-
-```bash
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs mail
-# Shows IMAP/SMTP connection details and host compatibility info
-```
-
-Yandex Mail uses standard IMAP/SMTP protocols rather than an HTTP API. This works on any host with open mail ports (VPS, dedicated servers, local machines). Cloud PaaS providers (Railway, Render, etc.) may block these ports — run `node src/yax.cjs mail` to check your environment.
-
-### Yandex Telemost (Video Conferences)
-
-> Works with a paid Yandex 360 subscription.
-
-> *"Create a Telemost meeting for tomorrow's standup"*
-
-What the agent executes:
-
-```bash
-node /openclaw/skills/openclaw-ru-skills/yax/src/yax.cjs telemost create
-```
-
-Telemost lets you create and manage video conferences programmatically. The OAuth scope `telemost-api:conferences.create` is included in the setup. Requires an active Yandex 360 for Business subscription — free/personal Yandex accounts don't have Telemost API access.
+Includes: Management API (counters, goals), Reporting API (stats, time-series, comparisons), Next.js setup guide with SPA tracking.
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                          OpenClaw Agent                              │
-│                                                                      │
-│  "Use GigaChat"    "Use YandexGPT"    "Upload to Disk"              │
-│       │                  │              "Create meeting"             │
-│       │                  │              "Check mail"                 │
-│       │                  │                   │                       │
-└───────┼──────────────────┼───────────────────┼───────────────────────┘
-        │                  │                   │
-        ▼                  ▼                   ▼
-  ┌───────────┐    ┌────────────┐    ┌──────────────────────┐
-  │ gpt2giga  │    │ Node.js    │    │  yax CLI             │
-  │ proxy     │    │ proxy      │    │  (no daemon)         │
-  │ :8443     │    │ :8444      │    │                      │
-  └─────┬─────┘    └─────┬──────┘    └──┬─────┬─────┬────┬─┘
-        │                │              │     │     │    │
-        ▼                ▼              ▼     ▼     ▼    ▼
-   Sber GigaChat    Yandex Cloud   Yandex Yandex  IMAP  Telemost
-   API (OAuth)      Foundation     Disk   CalDAV  /SMTP  API
-                    Models API     API
+                          AI Coding Agent
+
+  "Use GigaChat"    "Use YandexGPT"    "Deploy to Cloud"    "Check Metrika"
+       |                  |                   |                   |
+       v                  v                   v                   v
+ +-----------+    +------------+    +------------------+   +-------------+
+ | gpt2giga  |    | Node.js    |    | yc CLI           |   | Metrika API |
+ | proxy     |    | proxy      |    | (direct)         |   | (REST)      |
+ | :8443     |    | :8444      |    |                  |   |             |
+ +-----+-----+    +-----+------+    +--+-----+----+----+   +------+------+
+       |                |              |     |    |               |
+       v                v              v     v    v               v
+   Sber API      Yandex Cloud      Storage  DNS  VMs     api-metrika.
+   (OAuth)       Foundation        Compute  ...  ...     yandex.net
+                 Models API
 ```
-
-**GigaChat & YandexGPT proxies** translate OpenAI-format requests (`/v1/chat/completions`) to native APIs, so OpenClaw treats them like any OpenAI-compatible provider.
-
-**yax** is a CLI tool (not a daemon) — the agent calls it directly for each Disk, Calendar, Mail, and Telemost operation.
 
 ---
 
 ## Security
 
-- 🔒 Credentials stored in `~/.openclaw/*.env` with `0600` permissions
-- 🔒 Proxies bind to `127.0.0.1` only — no external access
-- 🔒 GigaChat tokens auto-generated via OAuth (expire in ~30 min)
-- 🔒 Yandex 360 uses OAuth device code flow — no passwords stored
-- 🔒 Cross-platform: Linux & macOS
+- Credentials stored locally with restrictive permissions
+- Proxies bind to `127.0.0.1` only — no external access
+- GigaChat tokens auto-refresh via OAuth (~30 min expiry)
+- Yandex 360 uses OAuth device code flow — no passwords stored
+- No tokens or secrets hardcoded in skill files
 
 ---
 
@@ -377,42 +312,39 @@ Telemost lets you create and manage video conferences programmatically. The OAut
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| GigaChat `401 Unauthorized` | Token expired (~30 min lifespan) | Agent restarts `start-proxy.sh` |
-| GigaChat `402 Payment Required` | Model quota exhausted | Switch model: Max → Pro → Lite |
-| GigaChat port busy | Zombie process holding `:8443` | `fuser -k 8443/tcp` then restart |
+| GigaChat `401 Unauthorized` | Token expired | Restart `start-proxy.sh` |
+| GigaChat `402 Payment Required` | Quota exhausted | Switch model: Max -> Pro -> Lite |
 | YandexGPT `403 Forbidden` | Wrong folder ID | Check `~/.openclaw/yandexgpt.env` |
-| YandexGPT proxy won't start | Port 8444 in use | `fuser -k 8444/tcp` then restart |
-| Yandex 360 token expired | OAuth token needs refresh | Run `yax auth device` again |
-| Mail IMAP/SMTP timeout | Ports 993/465 blocked by host | Deploy on a VPS or local machine |
-| Telemost `403 Forbidden` | No paid Yandex 360 subscription | Upgrade to Yandex 360 for Business |
-| `gpt2giga` not found | Not installed | `pip3 install gpt2giga` |
-
-**Tip:** For GigaChat, set up auto-refresh via cron:
-
-```bash
-*/25 * * * * /openclaw/skills/openclaw-ru-skills/gigachat/scripts/start-proxy.sh
-```
+| `yc: command not found` | CLI not in PATH | `export PATH="$HOME/yandex-cloud/bin:$PATH"` |
+| `yc` unauthenticated | No token | Run `yc init` |
+| Metrika 403 | Token missing scopes | Re-authorize with `metrika:read` scope |
+| Metrika no data | Counter not firing | Check `code_status`, remove `ssr:true` from static exports |
+| Yandex 360 token expired | OAuth refresh needed | Run `yax auth device` again |
+| Mail IMAP/SMTP timeout | Ports blocked | Deploy on VPS or local machine |
 
 ---
 
 ## Detailed Documentation
 
-Each skill has its own `SKILL.md` with implementation details:
+Each skill has its own `SKILL.md` with full reference:
 
 - [GigaChat SKILL.md](./gigachat/SKILL.md) — Token management, agent creation, model details
 - [YandexGPT SKILL.md](./yandexgpt/SKILL.md) — Proxy internals, model URI mapping
-- [Yandex 360 SKILL.md](./yax/SKILL.md) — Disk API, CalDAV, Mail (IMAP/SMTP), Telemost API, OAuth flow
+- [Yandex 360 SKILL.md](./yax/SKILL.md) — Disk API, CalDAV, Mail, Telemost, OAuth flow
+- [Yandex Cloud SKILL.md](./yandex-cloud/SKILL.md) — Full `yc` CLI reference, 30+ service groups
+- [Yandex Metrika SKILL.md](./yandex-metrika/SKILL.md) — Management, Reporting & Logs APIs, Next.js setup
 
 ---
 
 ## Links
 
-- **OpenClaw** — [openclaw.ai](https://openclaw.ai)
 - **GigaChat API** — [developers.sber.ru/docs/ru/gigachat/overview](https://developers.sber.ru/docs/ru/gigachat/overview)
 - **gpt2giga** — [pypi.org/project/gpt2giga](https://pypi.org/project/gpt2giga/)
 - **YandexGPT API** — [cloud.yandex.ru/docs/foundation-models](https://cloud.yandex.ru/docs/foundation-models/)
+- **Yandex Cloud CLI** — [cloud.yandex.ru/docs/cli](https://cloud.yandex.ru/docs/cli/)
+- **Yandex Metrika API** — [yandex.ru/dev/metrika](https://yandex.ru/dev/metrika/)
 - **Yandex OAuth** — [oauth.yandex.ru](https://oauth.yandex.ru/)
 
 ---
 
-Created by [@smvlx](https://github.com/smvlx) for OpenClaw agents
+Created by [@smvlx](https://github.com/smvlx)

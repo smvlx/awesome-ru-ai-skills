@@ -3,7 +3,7 @@ set -euo pipefail
 
 SKILLS_DIR="${OPENCLAW_SKILLS_DIR:-$HOME/.openclaw/skills}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILLS=(gigachat yandexgpt yax)
+SKILLS=(gigachat yandexgpt yax yandex-cloud yandex-metrika)
 
 echo "Installing openclaw-ru-skills to $SKILLS_DIR ..."
 
@@ -34,4 +34,4 @@ for skill in "${SKILLS[@]}"; do
   fi
 done
 
-echo "Done. Restart OpenClaw to load the new skills."
+echo "Done. Restart your agent to load the new skills."
