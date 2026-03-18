@@ -51,9 +51,9 @@ cp -r skills/gigachat ~/.openclaw/skills/
 
 ## Добавить скилл / Contribute
 
-Откройте PR — добавьте строку в таблицу или исходники в `skills/`. Подробности в [CONTRIBUTING.md](./CONTRIBUTING.md).
+Откройте PR — добавьте строку в таблицу или исходники в `skills/`. Подробности в [CONTRIBUTING.md](./CONTRIBUTING.md) · [English](./CONTRIBUTING.en.md).
 
-_Open a PR — add a row to the table or source code in `skills/`. See [CONTRIBUTING.md](./CONTRIBUTING.md)._
+_Open a PR — add a row to the table or source code in `skills/`. See [CONTRIBUTING.md](./CONTRIBUTING.md) · [English](./CONTRIBUTING.en.md)._
 
 ---
 

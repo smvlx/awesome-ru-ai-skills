@@ -1,32 +1,28 @@
-# Как добавить скилл / How to Contribute
+# Как добавить скилл
+
+English version: [CONTRIBUTING.en.md](./CONTRIBUTING.en.md)
 
 ---
 
-## Что принимаем / What We Accept
+## Что принимаем
 
-Скиллы для AI-агентов, которые интегрируются с российскими сервисами и платформами: Яндекс, Сбер, Bitrix24, 1С, amoCRM и другими.
-
-_Skills for AI agents that integrate with Russian services and platforms: Yandex, Sber, Bitrix24, 1C, amoCRM, and others._
+Скиллы для AI-агентов, которые интегрируются с российскими сервисами и платформами: Яндекс, Сбер, Bitrix24, 1С, amoCRM и другими коммерческими сервисами.
 
 ---
 
-## Как добавить скилл / How to Add a Skill
+## Как добавить скилл
 
-**Вариант 1 — исходники в этом репо / Option 1 — source in this repo:**
+**Вариант 1 — исходники в этом репо:**
 
 Добавьте папку со скиллом в `skills/` и откройте PR.
 
-_Add your skill folder to `skills/` and open a PR._
-
-**Вариант 2 — внешнее репо / Option 2 — external repo:**
+**Вариант 2 — внешнее репо:**
 
 Добавьте строку в таблицу в `README.md`, указав ссылку на ваш репо. Открывать PR с исходниками не нужно.
 
-_Add a row to the table in `README.md` linking to your repo. No need to include source code here._
-
 ---
 
-## Шаблон строки в таблице / Table Row Template
+## Шаблон строки в таблице
 
 Добавьте строку в таблицу `## Скиллы / Skills` в `README.md`:
 
@@ -34,7 +30,7 @@ _Add a row to the table in `README.md` linking to your repo. No need to include 
 | 🔧 your-skill-name | Описание скилла на русском | CC · OC | @your-handle |
 ```
 
-Колонки / Columns:
+Колонки:
 - **Скилл** — название + ссылка (на папку в этом репо или на внешний репо)
 - **Описание** — одна строка на русском
 - **Платформы** — `CC` (Claude Code), `OC` (OpenClaw), или другие
@@ -42,7 +38,7 @@ _Add a row to the table in `README.md` linking to your repo. No need to include 
 
 ---
 
-## Требования к скиллу / Skill Requirements
+## Требования к скиллу
 
 Скилл должен содержать файл `SKILL.md` с frontmatter:
 
@@ -54,18 +50,14 @@ version: 1.0.0
 ---
 ```
 
-_Every skill must have a `SKILL.md` with name, description, and version in the frontmatter._
-
 ---
 
-## Процесс / Process
+## Процесс
 
-1. Форкните репо / Fork the repo
-2. Внесите изменения / Make your changes
-3. Откройте PR / Open a PR
-4. Ревью от @smvlx / Review by @smvlx
-5. Мёрдж / Merge
+1. Форкните репо
+2. Внесите изменения
+3. Откройте PR
+4. Ревью от @smvlx
+5. Мёрдж
 
 Вопросы? Пишите в Threads: [@smirnov_sasha](https://www.threads.net/@smirnov_sasha)
-
-_Questions? Reach out on Threads: [@smirnov_sasha](https://www.threads.net/@smirnov_sasha)_
