@@ -3,14 +3,14 @@ set -euo pipefail
 
 SKILLS_DIR="${OPENCLAW_SKILLS_DIR:-$HOME/.openclaw/skills}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILLS=(gigachat yandexgpt yax)
+SKILLS=(gigachat yandexgpt yax yandex-cloud yandex-metrika)
 
-echo "Installing openclaw-ru-skills to $SKILLS_DIR ..."
+echo "Installing awesome-ru-ai-skills to $SKILLS_DIR ..."
 
 mkdir -p "$SKILLS_DIR"
 
 for skill in "${SKILLS[@]}"; do
-  src="$SCRIPT_DIR/$skill"
+  src="$SCRIPT_DIR/skills/$skill"
   dest="$SKILLS_DIR/$skill"
 
   if [ ! -d "$src" ]; then
@@ -34,4 +34,4 @@ for skill in "${SKILLS[@]}"; do
   fi
 done
 
-echo "Done. Restart OpenClaw to load the new skills."
+echo "Done. Restart your AI agent to pick up the new skills."
