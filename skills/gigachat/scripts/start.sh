@@ -17,11 +17,13 @@ fi
 
 source "$ENV_FILE"
 
-# SSL verification: enable if Sber CA is installed
+# SSL verification: enable if Sber CA is installed, disable otherwise
 SBER_CA="/etc/ssl/certs/sber-ca.crt"
 if [ -f "$SBER_CA" ]; then
   export GIGACHAT_VERIFY_SSL_CERTS=true
 else
+  echo "⚠️  SSL verification disabled. Sber CA not found at $SBER_CA"
+  echo "   To enable: download Sber root CA from https://developers.sber.ru/ and install to $SBER_CA"
   export GIGACHAT_VERIFY_SSL_CERTS=false
 fi
 
