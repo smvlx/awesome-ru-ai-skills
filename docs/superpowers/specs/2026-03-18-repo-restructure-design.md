@@ -91,14 +91,33 @@ All skills are universal — they work on any AI agent that reads skill files. E
 | File | Action |
 |------|--------|
 | `README.md` | Full rewrite — bilingual, new identity |
-| `CONTRIBUTING.md` | New — contributor template and guidelines |
-| `install.sh` | Update paths from root → `skills/` |
+| `CONTRIBUTING.md` | New — bilingual (RU primary, EN secondary), see structure below |
+| `install.sh` | Four specific changes — see below |
 | `skills/gigachat/` | Move from `gigachat/` |
 | `skills/yandexgpt/` | Move from `yandexgpt/` |
 | `skills/yax/` | Move from `yax/` |
-| `skills/yandex-cloud/` | Add — copy from author's Claude Code skills |
-| `skills/yandex-metrika/` | Add — copy from author's Claude Code skills |
+| `skills/yandex-cloud/` | Add — source: `~/.claude/plugins/cache/*/skills/yandex-cloud/` |
+| `skills/yandex-metrika/` | Add — source: `~/.claude/plugins/cache/*/skills/yandex-metrika/` |
 | `.gitignore` | Already updated (`.superpowers/` added) |
+
+### install.sh — required changes
+
+1. `SKILLS=(gigachat yandexgpt yax)` → add `yandex-cloud` and `yandex-metrika`
+2. `src="$SCRIPT_DIR/$skill"` → `src="$SCRIPT_DIR/skills/$skill"`
+3. User-facing echo text: remove references to `openclaw-ru-skills`, make platform-agnostic
+4. Final message: `"Done. Restart OpenClaw..."` → `"Done. Restart your AI agent to pick up the new skills."`
+
+### CONTRIBUTING.md — required sections
+
+Bilingual: RU primary, EN italic secondary (same convention as README).
+
+1. **Что принимаем / What we accept** — skills that integrate with Russian tech stack platforms
+2. **Как добавить скилл / How to add a skill** — two paths:
+   - Source in this repo: add folder to `skills/`, open PR
+   - External repo: add a row to the README table only, open PR
+3. **Шаблон строки в таблице / Table row template** — columns: Скилл (name + link) · Описание (RU) · Платформы (CC/OC/etc.) · Автор (@handle)
+4. **Требования к скиллу / Skill requirements** — must have a `SKILL.md` with name, description, and platform compatibility in frontmatter
+5. **Процесс / Process** — open PR → review by @smvlx → merge
 
 ---
 
