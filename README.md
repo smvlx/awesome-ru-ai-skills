@@ -2,7 +2,7 @@
 
 Скиллы для AI-агентов: российский технологический стек
 
-_AI agent skills for the Russian tech stack_
+[English version](./README.en.md)
 
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-blue)
 ![OpenClaw](https://img.shields.io/badge/OpenClaw-compatible-blue)
@@ -14,11 +14,9 @@ _AI agent skills for the Russian tech stack_
 
 Подборка скиллов для AI-агентов — интеграции с российскими сервисами и платформами: Яндекс, Сбер, Bitrix24, 1С, amoCRM и другими.
 
-_A collection of AI agent skills — integrations with Russian services and platforms._
-
 ---
 
-## Скиллы / Skills
+## Скиллы
 
 | Скилл | Описание | Платформы | Автор |
 |-------|----------|-----------|-------|
@@ -30,18 +28,18 @@ _A collection of AI agent skills — integrations with Russian services and plat
 | _bitrix24_ | _Bitrix24 CRM API_ | — | _открыто для PR_ |
 | _amocrm_ | _amoCRM / Kommo API_ | — | _открыто для PR_ |
 
-CC = Claude Code · OC = OpenClaw · _курсив = ждём PR / waiting for contributions_
+CC = Claude Code · OC = OpenClaw · _курсив = ждём PR_
 
 ---
 
-## Установка / Installation
+## Установка
 
 ```bash
 git clone https://github.com/smvlx/awesome-ru-ai-skills.git ~/awesome-ru-ai-skills
 ~/awesome-ru-ai-skills/install.sh
 ```
 
-Или установите отдельный скилл вручную / Or install a single skill manually:
+Или установите отдельный скилл вручную:
 
 ```bash
 cp -r skills/gigachat ~/.openclaw/skills/
@@ -49,11 +47,9 @@ cp -r skills/gigachat ~/.openclaw/skills/
 
 ---
 
-## Добавить скилл / Contribute
+## Добавить скилл
 
-Откройте PR — добавьте строку в таблицу или исходники в `skills/`. Подробности в [CONTRIBUTING.md](./CONTRIBUTING.md) · [English](./CONTRIBUTING.en.md).
-
-_Open a PR — add a row to the table or source code in `skills/`. See [CONTRIBUTING.md](./CONTRIBUTING.md) · [English](./CONTRIBUTING.en.md)._
+Откройте PR — добавьте строку в таблицу или исходники в `skills/`. Подробности в [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
