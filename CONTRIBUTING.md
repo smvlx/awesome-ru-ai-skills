@@ -4,9 +4,9 @@
 
 ## Что принимаем / What We Accept
 
-Скиллы для AI-агентов, которые интегрируются с российскими сервисами и платформами: Яндекс, Сбер, Bitrix24, 1С, amoCRM, Госуслуги, и другими.
+Скиллы для AI-агентов, которые интегрируются с российскими сервисами и платформами: Яндекс, Сбер, Bitrix24, 1С, amoCRM и другими.
 
-_Skills for AI agents that integrate with Russian services and platforms: Yandex, Sber, Bitrix24, 1C, amoCRM, Gosuslugi, and others._
+_Skills for AI agents that integrate with Russian services and platforms: Yandex, Sber, Bitrix24, 1C, amoCRM, and others._
 
 ---
 
