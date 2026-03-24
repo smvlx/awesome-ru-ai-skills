@@ -269,6 +269,119 @@ yc compute snapshot create --name my-snap --disk-name my-disk
 yc compute snapshot list
 ```
 
+## Serverless Functions (Cloud Functions)
+
+### Create and manage functions
+```bash
+# Create function
+yc serverless function create --name my-function
+
+# List functions
+yc serverless function list
+
+# Get function info
+yc serverless function get --name my-function
+
+# Delete function
+yc serverless function delete --name my-function
+```
+
+### Deploy a version
+```bash
+# From Object Storage package
+yc serverless function version create \
+  --function-name my-function \
+  --runtime python312 \
+  --entrypoint handler.handler \
+  --memory 128m \
+  --execution-timeout 10s \
+  --package-bucket-name my-bucket \
+  --package-object-name deploy/function.zip \
+  --environment "KEY1=val1,KEY2=val2" \
+  --service-account-id <sa-id>
+
+# Available runtimes
+# python312, python311, nodejs18, nodejs16, golang121, java21, dotnet8, bash-2204, r-43
+```
+
+### Packaging for deployment
+```bash
+# Python example: install deps + zip
+pip3 install -t package httpx boto3
+cp *.py package/
+cd package && zip -qr ../function.zip . && cd ..
+rm -rf package
+
+# Upload package
+yc storage s3 cp function.zip s3://my-bucket/deploy/function.zip
+```
+
+### Public access and invocation
+```bash
+# Make function publicly accessible (no auth required)
+yc serverless function allow-unauthenticated-invoke --name my-function
+
+# Revoke public access
+yc serverless function deny-unauthenticated-invoke --name my-function
+
+# Invoke directly (for testing)
+yc serverless function invoke --name my-function --data '{"key": "value"}'
+
+# Get function URL
+# https://functions.yandexcloud.net/<function-id>
+```
+
+### Logs and monitoring
+```bash
+# View function logs
+yc log read --group-name <function-name> --follow
+
+# List function versions
+yc serverless function version list --function-name my-function
+```
+
+### Triggers
+```bash
+# Create timer trigger (cron)
+yc serverless trigger create timer \
+  --name my-timer \
+  --cron-expression "*/5 * * * ? *" \
+  --invoke-function-name my-function \
+  --invoke-function-service-account-id <sa-id>
+
+# Create Object Storage trigger (on upload)
+yc serverless trigger create object-storage \
+  --name my-trigger \
+  --bucket-id my-bucket \
+  --events create-object \
+  --invoke-function-name my-function \
+  --invoke-function-service-account-id <sa-id>
+
+# List triggers
+yc serverless trigger list
+
+# Delete trigger
+yc serverless trigger delete --name my-trigger
+```
+
+### Telegram bot webhook pattern
+```bash
+# 1. Create & deploy function (see above)
+# 2. Make publicly accessible
+yc serverless function allow-unauthenticated-invoke --name my-bot
+
+# 3. Set Telegram webhook
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://functions.yandexcloud.net/<function-id>", "secret_token": "<webhook-secret>"}'
+
+# 4. Verify webhook
+curl -s "https://api.telegram.org/bot<TOKEN>/getWebhookInfo" | python3 -m json.tool
+
+# Note: allow-unauthenticated-invoke eliminates the need for API Gateway.
+# The function URL is directly reachable via HTTPS.
+```
+
 ## All Major Service Groups
 
 For comprehensive reference on any service group below, run `yc <group> --help`.
