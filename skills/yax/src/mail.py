@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Yandex Mail helper via IMAP/XOAUTH2"""
+"""Yandex Mail helper via IMAP/XOAUTH2 and SMTP"""
 import imaplib
+import smtplib
+import ssl
 import email
 import json
 import sys
 import re
 import os
+import base64
 from email.header import decode_header
+from email.message import EmailMessage
 from html.parser import HTMLParser
 
 TOKEN_FILE = os.path.expanduser("~/.openclaw/yax-token.json")
@@ -128,6 +132,31 @@ def cmd_delete(uid, folder="INBOX"):
     except Exception as e:
         print(f"❌ Delete failed: {e}")
 
+def cmd_send(to, subject, body):
+    token = load_token()
+    email_from = "davydov.e.v@yandex.ru"
+    auth_string = f"user={email_from}\x01auth=Bearer {token}\x01\x01"
+    auth_bytes = base64.b64encode(auth_string.encode()).decode()
+    msg = EmailMessage()
+    msg["From"] = email_from
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(body)
+    try:
+        with smtplib.SMTP("smtp.yandex.ru", 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            code, _ = server.docmd("AUTH", f"XOAUTH2 {auth_bytes}")
+            if code != 235:
+                print(f"❌ SMTP auth failed: {code}")
+                return
+            server.send_message(msg)
+        print(f"✅ Письмо отправлено → {to}")
+    except Exception as e:
+        print(f"❌ Ошибка: {type(e).__name__}: {e}")
+
+
 def cmd_folders():
     mail = get_mail()
     _, data = mail.list()
@@ -186,5 +215,13 @@ if __name__ == "__main__":
             cmd_delete(uid, folder)
     elif cmd == "folders":
         cmd_folders()
+    elif cmd == "send":
+        if len(sys.argv) < 4:
+            print("Usage: mail.py send <to> <subject> <body>")
+        else:
+            to = sys.argv[2]
+            subject = sys.argv[3]
+            body = sys.argv[4] if len(sys.argv) > 4 else ""
+            cmd_send(to, subject, body)
     else:
-        print("Usage: mail.py [list|read|delete|folders]")
+        print("Usage: mail.py [list|read|delete|folders|send]")

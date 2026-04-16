@@ -67,6 +67,7 @@ node src/yax.cjs mail folders              # список папок
 node src/yax.cjs mail list INBOX 10        # последние 10 писем
 node src/yax.cjs mail read <uid>           # прочитать письмо
 node src/yax.cjs mail delete <uid>         # удалить письмо
+node src/yax.cjs mail send <to> <subject> <body>  # отправить письмо
 ```
 
 ## Implementation Details
