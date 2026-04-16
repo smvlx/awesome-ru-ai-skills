@@ -1,7 +1,7 @@
 ---
 name: yax
 description: CLI tool for Yandex Disk, Calendar, and Mail via Yandex OAuth API
-version: 1.1.0
+version: 1.2.0
 metadata: {"openclaw":{"emoji":"📁","homepage":"https://github.com/smvlx/awesome-ru-ai-skills","os":["darwin","linux"],"requires":{"bins":["node"],"env":["YAX_CLIENT_ID"]},"primaryEnv":"YAX_CLIENT_ID","configPaths":["~/.openclaw/yax.env","~/.openclaw/yax-token.json"]}}
 ---
 
@@ -12,16 +12,16 @@ CLI tool for Yandex Disk, Calendar, and Mail via Yandex OAuth API.
 ## Features
 
 - **Disk**: info, list, mkdir, upload, download
-- **Calendar**: list calendars, create events (via CalDAV)
+- **Calendar**: list calendars, list events, create/update/delete events (via CalDAV)
 - **Mail**: ⚠️ Limited — Yandex has no public HTTP API for mail (IMAP/SMTP only, ports often blocked in cloud)
 
 ## Prerequisites
 
 1. Create a Yandex OAuth app at https://oauth.yandex.ru/client/new
    - Redirect URI: `https://oauth.yandex.ru/verification_code`
-   - Required scopes:
-     - `cloud_api:disk.app_folder` — Disk app folder access
-     - `cloud_api:disk.info` — Disk info
+   - **Required scopes (критично для загрузки файлов):**
+     - `cloud_api:disk.write` — ⚠️ Запись на диск (без этого НЕ работает upload!)
+     - `cloud_api:disk.read` — Чтение информации о диске
      - `calendar:all` — Calendar read/write
      - `mail:smtp` — Mail sending (SMTP only, no HTTP API)
    - Note the Client ID and Client Secret
@@ -30,6 +30,11 @@ CLI tool for Yandex Disk, Calendar, and Mail via Yandex OAuth API.
    ```
    YAX_CLIENT_ID=your_app_client_id
    YAX_CLIENT_SECRET=your_app_secret_if_any
+   ```
+
+3. **После изменения scopes в приложении — обязательно переавторизуйся!**
+   ```bash
+   node src/yax.cjs auth
    ```
 
 ## Setup & Auth
@@ -50,14 +55,26 @@ node src/yax.cjs disk upload ./local-file.txt /remote-path.txt
 node src/yax.cjs disk download /remote-path.txt ./local-file.txt
 
 # Calendar
-node src/yax.cjs calendar list
-node src/yax.cjs calendar create "Meeting" "2026-02-14" "11:00:00" "12:00:00" "Holiday meeting" "Europe/Moscow"
+node src/yax.cjs calendar list                         # список календарей
+node src/yax.cjs calendar list-events                  # события в календаре (UID + название + время)
+node src/yax.cjs calendar create "Meeting" "2026-02-14" "11:00:00" "12:00:00" "Description" "Europe/Moscow"  # создать
+node src/yax.cjs calendar update "<uid>" "New Title" "2026-02-14" "12:00:00" "13:00:00" "Desc" "Europe/Moscow"   # обновить
+node src/yax.cjs calendar delete "<uid>"               # удалить
 
 # Mail (informational only)
 node src/yax.cjs mail
 ```
 
 ## Implementation Details
+
+### Проблемы и решения
+
+**Проблема:** `Upload URL error: { error: 'ForbiddenError' }`
+**Причина:** OAuth-приложению не хватает scope `cloud_api:disk.write`
+**Решение:** Добавь `cloud_api:disk.write` в scopes приложения на https://oauth.yandex.ru/client/your-app-id, затем переавторизуйся (`node src/yax.cjs auth`)
+
+**Проблема:** Токен устарел / авторизация сбрасывается
+**Решение:** Токен жив 1 год, но после изменения прав приложения нужна повторная авторизация. Старые токены остаются рабочими до истечения, но с новыми scopes — только после re-auth.
 
 - **Calendar**: Uses raw CalDAV HTTP requests to `caldav.yandex.ru`. Automatically discovers user login via OAuth info endpoint and calendar paths via PROPFIND. Supports timezone-aware event creation. No external dependencies.
 - **Mail**: Yandex does not offer a public REST/HTTP API for mail operations. Only IMAP/SMTP is available, which requires direct TCP connections on ports 993/465 — typically blocked in cloud environments (Railway, etc.). The Yandex 360 Admin API exists for organization accounts but is not suitable for personal use.
