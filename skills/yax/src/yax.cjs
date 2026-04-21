@@ -459,17 +459,190 @@ async function calendarCreate(
   }
 }
 
+// List events in the primary events calendar
+async function calendarListEvents() {
+  const login = await getUserLogin();
+  const xml = await discoverCalendars(login);
+
+  const match = xml.match(/\/calendars\/[^\/]+\/(events-\d+)\//);
+  if (!match) {
+    console.error("No events calendar found");
+    return;
+  }
+  const calendarId = match[1];
+
+  const token = getToken();
+  const body = `<?xml version="1.0" encoding="utf-8"?>
+<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav" xmlns:a="http://apple.com/ns/ical/">
+  <d:prop>
+    <d:getetag/>
+    <a:calendarcolor/>
+  </d:prop>
+</d:propfind>`;
+
+  const res = await request(
+    {
+      hostname: "caldav.yandex.ru",
+      path: `/calendars/${login}@yandex.ru/${calendarId}/`,
+      method: "PROPFIND",
+      headers: {
+        Authorization: `OAuth ${token}`,
+        "Content-Type": "application/xml",
+        Depth: "1",
+        "Content-Length": Buffer.byteLength(body),
+      },
+    },
+    body,
+  );
+
+  const xmlBody = res.body.toString();
+  // Parse UIDs from hrefs
+  const hrefRegex = /<href[^>]*>([^<]+\.ics)<\/href>/gi;
+  const matches = [...xmlBody.matchAll(hrefRegex)];
+
+  if (matches.length === 0) {
+    console.log("No events found");
+    return;
+  }
+
+  // Fetch each .ics to get summary and time
+  for (const m of matches) {
+    const icsPath = decodeURIComponent(m[1]);
+    const uid = icsPath.replace(/.*\//, "").replace("\.ics", "");
+    const icsRes = await request({
+      hostname: "caldav.yandex.ru",
+      path: `/calendars/${encodeURIComponent(login + '@yandex.ru')}/${calendarId}/${encodeURIComponent(uid + '.ics')}`,
+      method: "GET",
+      headers: { Authorization: `OAuth ${token}` },
+    });
+    const icsBody = icsRes.body.toString();
+    const summaryIdx = icsBody.indexOf('SUMMARY:');
+    const summary = summaryIdx >= 0 ? icsBody.slice(summaryIdx + 8, icsBody.indexOf('\r\n', summaryIdx)).trim() : '(no title)';
+    const dtstartIdx = icsBody.indexOf('DTSTART;TZID=');
+    const dtstart = dtstartIdx >= 0 ? icsBody.slice(dtstartIdx + 12, icsBody.indexOf('\r\n', dtstartIdx)).trim() : '';
+    const dateStr = dtstart ? `${dtstart.slice(0, 4)}-${dtstart.slice(4, 6)}-${dtstart.slice(6, 8)} ${dtstart.slice(9, 11)}:${dtstart.slice(11, 13)}` : "";
+    console.log(`${dateStr} | ${summary} | UID: ${uid}`);
+  }
+}
+
+// Update an existing event by UID
+async function calendarUpdate(uid, newSummary, newDate, newStartTime, newEndTime, newDescription, timezone = "Europe/Moscow") {
+  const login = await getUserLogin();
+  const xml = await discoverCalendars(login);
+
+  const match = xml.match(/\/calendars\/[^\/]+\/(events-\d+)\//);
+  if (!match) {
+    console.error("No events calendar found");
+    return;
+  }
+  const calendarId = match[1];
+
+  const token = getToken();
+
+  // Fetch existing event to preserve fields
+  const icsRes = await request({
+    hostname: "caldav.yandex.ru",
+    path: `/calendars/${login}@yandex.ru/${calendarId}/${uid}.ics`,
+    method: "GET",
+    headers: { Authorization: `OAuth ${token}` },
+  });
+
+  if (icsRes.status === 404) {
+    console.error(`Event not found: ${uid}`);
+    return;
+  }
+
+  const start = newStartTime.replace(/:/g, "");
+  const end = newEndTime ? newEndTime.replace(/:/g, "") : start;
+  const tzOffset = getTzOffset(timezone);
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//yax//openclaw//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VTIMEZONE",
+    `TZID:${timezone}`,
+    "BEGIN:STANDARD",
+    "DTSTART:20260101T000000",
+    `TZOFFSETFROM:${tzOffset}`,
+    `TZOFFSETTO:${tzOffset}`,
+    "END:STANDARD",
+    "END:VTIMEZONE",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTART;TZID=${timezone}:${newDate.replace(/-/g, "")}T${start}`,
+    `DTEND;TZID=${timezone}:${newDate.replace(/-/g, "")}T${end}`,
+    `SUMMARY:${newSummary}`,
+    newDescription ? `DESCRIPTION:${newDescription}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .filter(Boolean)
+    .join("\r\n");
+
+  const path = `/calendars/${login}@yandex.ru/${calendarId}/${uid}.ics`;
+  const putRes = await request(
+    {
+      hostname: "caldav.yandex.ru",
+      path: path,
+      method: "PUT",
+      headers: {
+        Authorization: `OAuth ${token}`,
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Length": Buffer.byteLength(ics),
+      },
+    },
+    ics,
+  );
+
+  if (putRes.status === 200 || putRes.status === 201 || putRes.status === 204) {
+    console.log(`✅ Updated event: ${newSummary}`);
+  } else {
+    console.log(`❌ Status: ${putRes.status}`);
+  }
+}
+
+// Delete an event by UID
+async function calendarDelete(uid) {
+  const login = await getUserLogin();
+  const xml = await discoverCalendars(login);
+
+  const match = xml.match(/\/calendars\/[^\/]+\/(events-\d+)\//);
+  if (!match) {
+    console.error("No events calendar found");
+    return;
+  }
+  const calendarId = match[1];
+
+  const token = getToken();
+  const path = `/calendars/${login}@yandex.ru/${calendarId}/${uid}.ics`;
+  const res = await request(
+    {
+      hostname: "caldav.yandex.ru",
+      path: path,
+      method: "DELETE",
+      headers: { Authorization: `OAuth ${token}` },
+    },
+  );
+
+  if (res.status === 200 || res.status === 204 || res.status === 404) {
+    console.log(`✅ Deleted event: ${uid}`);
+  } else {
+    console.log(`❌ Status: ${res.status}`);
+  }
+}
+
 // --- Mail ---
 // Yandex doesn't have a public HTTP API for mail (only IMAP/SMTP).
 // We document this as a limitation. Below is a stub.
-function mailNote() {
-  console.log(`⚠️  Yandex Mail HTTP API is not publicly available.
-Yandex only supports IMAP/SMTP for mail access.
-Since SMTP/IMAP ports are often blocked in cloud environments,
-mail functionality is currently unavailable.
-
-Workaround: Use Yandex 360 Admin API if you have an organization account,
-or use the Yandex Mail web interface.`);
+function mailMain() {
+  const { spawn } = require("child_process");
+  const path = require("path");
+  const script = path.join(__dirname, "mail.py");
+  const args = process.argv.slice(3); // yax mail <subcommand> <args>
+  const child = spawn("python3", [script, ...args], { stdio: "inherit" });
+  child.on("error", (e) => console.error("Mail error:", e.message));
 }
 
 // --- CLI ---
@@ -514,6 +687,8 @@ async function main() {
         switch (sub) {
           case "list":
             return calendarList();
+          case "list-events":
+            return calendarListEvents();
           case "create": {
             // calendar create "Summary" "2026-02-14" "11:00:00" "12:00:00" "Description" "Europe/Moscow"
             const [summary, date, startTime, endTime, description, timezone] = args;
@@ -525,14 +700,33 @@ async function main() {
             }
             return calendarCreate(summary, date, startTime, endTime, description, timezone);
           }
+          case "update": {
+            // calendar update <uid> <new-summary> <YYYY-MM-DD> <HH:MM:SS> [HH:MM:SS] [description] [timezone]
+            const [uid, newSummary, newDate, newStartTime, newEndTime, newDescription, timezone] = args;
+            if (!uid || !newSummary || !newDate || !newStartTime) {
+              console.log(
+                "Usage: yax calendar update <uid> <new-summary> <YYYY-MM-DD> <HH:MM:SS> [HH:MM:SS] [description] [timezone]",
+              );
+              return;
+            }
+            return calendarUpdate(uid, newSummary, newDate, newStartTime, newEndTime, newDescription, timezone);
+          }
+          case "delete": {
+            // calendar delete <uid>
+            if (!args[0]) {
+              console.log("Usage: yax calendar delete <uid>");
+              return;
+            }
+            return calendarDelete(args[0]);
+          }
           default:
             console.log(
-              "Usage: yax calendar [list|create <summary> <YYYY-MM-DD> <HH:MM:SS> [HH:MM:SS] [description] [timezone]]",
+              "Usage: yax calendar [list|list-events|create|update|delete]",
             );
         }
         break;
       case "mail":
-        return mailNote();
+        return mailMain();
       default:
         console.log(`yax — Yandex 360 CLI
 
@@ -545,7 +739,13 @@ Commands:
   disk download <remote> <local> Download file
   calendar list           List calendars
   calendar create <summary> <YYYY-MM-DD> <HH:MM:SS> [HH:MM:SS] [desc] [tz]  Create event
-  mail                    Mail info (limited)`);
+  mail list [folder] [n]    List recent emails (default: INBOX, last 10)
+  mail read <uid> [folder] Read email by UID
+  mail delete <uid> [folder] Delete email by UID
+  mail folders             List all mail folders
+  mail attachments <uid> [folder]  List attachments in email
+  mail download <uid> <name> [folder] [dir]  Download one attachment
+  mail download_all <uid> [folder] [dir]  Download all attachments`);
     }
   } catch (e) {
     console.error("Error:", e.message);
